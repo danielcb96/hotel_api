@@ -2,13 +2,22 @@ from db.hoteles_db import HotelsInDB, database_hotels
 from db.hoteles_db import  get_hotel, update_hotel
 from typing import  Dict
 from models.hotel_models import HotelIn, HotelInU, HotelOut
-
+import json
 import datetime
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 api = FastAPI()
 
-hotel_out = {}
+from fastapi.middleware.cors import CORSMiddleware
+origins = [
+    "http://localhost.tiangolo.com", "https://localhost.tiangolo.com",
+    "http://localhost", "http://localhost:8080","http://localhost:8081",
+]
+api.add_middleware(
+    CORSMiddleware, allow_origins=origins,
+    allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
+)
+
+hotel_out = []*100
 hotel_out.clear()
 
 @api.post("/hotel/search/")
@@ -16,18 +25,17 @@ async def auth_hotel(hotel_in: HotelIn):
     hotel_out.clear()
     hotel_in_db = get_hotel(hotel_in.ciudad)
     if hotel_in_db == None:
-        raise HTTPException(status_code=404, detail="No hay hoteles registrados en " + hotel_in.ciudad) 
+        raise HTTPException(status_code=404, detail= "No hay hoteles registrados") 
     i=0
-    print(database_hotels.keys())
     for clave in database_hotels.keys():
         if get_hotel(clave).ciudad == hotel_in_db.ciudad:
             if hotel_in.zona == get_hotel(clave).zona:
                 i+=1
-                hotel_out[i]= HotelOut(**get_hotel(clave).dict())
+                hotel_out.append(get_hotel(clave).dict())
     if i!=0:
         return hotel_out
     else:
-        return "No hay hoteles en la zona " + hotel_in.zona + " de " + hotel_in.ciudad
+        raise HTTPException(status_code=403)
 
 @api.get("/hotelname/{ciudad}")
 async def get_hoteles(ciudad: str):
@@ -35,11 +43,9 @@ async def get_hoteles(ciudad: str):
     hotel_in_db = get_hotel(ciudad)
     if hotel_in_db == None:
         raise HTTPException(status_code=404,detail="No hay hoteles registrados en " + ciudad)
-    i=0
     for clave in database_hotels.keys():
         if get_hotel(clave).ciudad == hotel_in_db.ciudad:
-            i+=1
-            hotel_out[i]= HotelOut(**get_hotel(clave).dict())
+            hotel_out.append(get_hotel(clave).dict())
     return hotel_out
 
 @api.put("/hotelname/precio/")
