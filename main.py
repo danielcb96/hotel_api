@@ -1,7 +1,7 @@
 from db.hoteles_db import HotelsInDB, database_hotels
 from db.hoteles_db import  get_hotel, update_hotel
 from typing import  Dict
-from models.hotel_models import HotelIn, HotelInU, HotelOut
+from models.hotel_models import HotelIn, HotelInU, HotelOut, HotelOut_a,HotelOut_b
 import json
 import datetime
 from fastapi import FastAPI, HTTPException
@@ -19,6 +19,7 @@ api.add_middleware(
 )
 
 hotel_out = []*100
+a={}
 hotel_out.clear()
 
 @api.post("/hotel/search/")
@@ -29,24 +30,40 @@ async def auth_hotel(hotel_in: HotelIn):
         raise HTTPException(status_code=404, detail= "No hay hoteles registrados") 
     i=0
     for clave in database_hotels.keys():
-        if get_hotel(clave).ciudad == hotel_in_db.ciudad:
-            if hotel_in.zona == get_hotel(clave).zona:
+        a = get_hotel(clave)
+        if a.ciudad == hotel_in_db.ciudad:
+            if hotel_in.zona == a.zona:
                 i+=1
-                hotel_out.append(get_hotel(clave).dict())
-    if i!=0:
+                if(hotel_in.mes == "Marzo" or hotel_in.mes == "Abril" or hotel_in.mes == "Mayo" or hotel_in.mes == "Junio" ):
+                    hotel_out.append(HotelOut(**a.dict()))
+
+                if(hotel_in.mes == "Noviembre" or hotel_in.mes == "Diciembre" or hotel_in.mes == "Enero" or hotel_in.mes == "Febrero" ):
+                    hotel_out.append(HotelOut_a(**a.dict()))
+
+                if(hotel_in.mes == "Julio" or hotel_in.mes == "Agosto" or hotel_in.mes == "Septiembre" or hotel_in.mes == "Octubre" ):
+                    hotel_out.append(HotelOut_b(**a.dict()))                                        
+    if i!=0:       
         return hotel_out
     else:
-        raise HTTPException(status_code=403)
-
-@api.get("/hotelname/{ciudad}")
-async def get_hoteles(ciudad: str):
+        raise HTTPException(status_code=403)                               
+                                       
+@api.get("/hotelname/{ciudad}/{mes}")
+async def get_hoteles(ciudad: str,mes: str):
     hotel_out.clear()
     hotel_in_db = get_hotel(ciudad)
     if hotel_in_db == None:
         raise HTTPException(status_code=404,detail="No hay hoteles registrados en " + ciudad)
     for clave in database_hotels.keys():
-        if get_hotel(clave).ciudad == hotel_in_db.ciudad:
-            hotel_out.append(get_hotel(clave).dict())
+        a=get_hotel(clave)
+        if a.ciudad == hotel_in_db.ciudad:
+            if(mes == "Marzo" or mes == "Abril" or mes == "Mayo" or mes == "Junio" ):
+                hotel_out.append(HotelOut(**a.dict()))
+
+            if(mes == "Noviembre" or mes == "Diciembre" or mes == "Enero" or mes == "Febrero" ):
+                hotel_out.append(HotelOut_a(**a.dict()))
+
+            if(mes == "Julio" or mes == "Agosto" or mes == "Septiembre" or mes == "Octubre" ):
+                hotel_out.append(HotelOut_b(**a.dict()))
     return hotel_out
 
 @api.put("/hotelname/precio/")
